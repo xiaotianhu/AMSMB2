@@ -23,6 +23,11 @@
 #include "config.h"
 #endif
 
+#if defined(PS2_EE_PLATFORM) || defined(PS3_PPU_PLATFORM) || defined(ESP_PLATFORM) || defined(PICO_PLATFORM) || defined(__APPLE__) || defined(PS4_PLATFORM)
+/* We need this for time_t */
+#include <time.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -36,6 +41,7 @@ extern "C" {
 #define MAX_ERROR_SIZE 256
 
 #define PAD_TO_32BIT(len) ((len + 0x03) & 0xfffffffc)
+#define PAD_TO_64BIT(len) ((len + 0x07) & 0xfffffff8)
 
 #define SMB2_SPL_SIZE 4
 #define SMB2_HEADER_SIZE 64
@@ -112,11 +118,18 @@ enum smb2_sec {
 };
 
 #define MAX_CREDITS 1024
+#define SMB2_SALT_SIZE 32
 
 struct smb2_context {
 
         t_socket fd;
-        int is_connected;
+
+        t_socket *connecting_fds;
+        size_t connecting_fds_count;
+        struct addrinfo *addrinfos;
+        const struct addrinfo *next_addrinfo;
+
+        int timeout;
 
         enum smb2_sec sec;
 
@@ -134,6 +147,8 @@ struct smb2_context {
         const char *domain;
         const char *workstation;
         char client_challenge[8];
+
+        void *opaque;
 
         smb2_command_cb connect_cb;
         void *connect_data;
@@ -153,6 +168,9 @@ struct smb2_context {
         uint8_t signing_key[SMB2_KEY_SIZE];
         uint8_t serverin_key[SMB2_KEY_SIZE];
         uint8_t serverout_key[SMB2_KEY_SIZE];
+        uint8_t salt[SMB2_SALT_SIZE];
+        uint16_t cypher;
+        uint8_t preauthhash[SMB2_PREAUTH_HASH_SIZE];
 
         /*
          * For handling received smb3 encrypted blobs
@@ -195,6 +213,7 @@ struct smb2_context {
         uint16_t dialect;
 
         char error_string[MAX_ERROR_SIZE];
+        int nterror;
 
         /* Open filehandles */
         struct smb2fh *fhs;
@@ -208,7 +227,7 @@ struct smb2_context {
 
         /* dcerpc settings */
         int ndr;
-        int endianess;
+        int endianness;
 };
 
 #define SMB2_MAX_PDU_SIZE 16*1024*1024
@@ -247,32 +266,37 @@ struct smb2_pdu {
         uint8_t seal:1;
         uint32_t crypt_len;
         unsigned char *crypt;
+        time_t timeout;
 };
 
-/* UCS2 is always in Little Endianness */
-struct ucs2 {
+/* SMB's UTF-16 is always in Little Endian */
+struct utf16 {
         int len;
         uint16_t val[1];
 };
 
-/* Returns a string converted to UCS2 format. Use free() to release
- * the ucs2 string.
+/* Returns a string converted to UTF-16 format. Use free() to release
+ * the utf16 string.
  */
-struct ucs2 *utf8_to_ucs2(const char *utf8);
+struct utf16 *utf8_to_utf16(const char *utf8);
         
 /* Returns a string converted to UTF8 format. Use free() to release
  * the utf8 string.
  */
-const char *ucs2_to_utf8(const uint16_t *str, int len);
+const char *utf16_to_utf8(const uint16_t *str, int len);
 
 /* Convert a win timestamp to a unix timeval */
 void win_to_timeval(uint64_t smb2_time, struct smb2_timeval *tv);
 
-/* Covnert unit timeval to a win timestamp */
+/* Convert unit timeval to a win timestamp */
 uint64_t timeval_to_win(struct smb2_timeval *tv);
 
 void smb2_set_error(struct smb2_context *smb2, const char *error_string,
                     ...);
+void smb2_set_nterror(struct smb2_context *smb2, int nterror,
+                    const char *error_string, ...);
+
+void smb2_close_connecting_fds(struct smb2_context *smb2);
 
 void *smb2_alloc_init(struct smb2_context *smb2, size_t size);
 void *smb2_alloc_data(struct smb2_context *smb2, void *memctx, size_t size);
@@ -298,6 +322,8 @@ void smb2_free_iovector(struct smb2_context *smb2, struct smb2_io_vectors *v);
 
 int smb2_decode_header(struct smb2_context *smb2, struct smb2_iovec *iov,
                        struct smb2_header *hdr);
+int smb2_calc_signature(struct smb2_context *smb2, uint8_t *signature,
+                        struct smb2_iovec *iov, int niov);
         
 int smb2_set_uint8(struct smb2_iovec *iov, int offset, uint8_t value);
 int smb2_set_uint16(struct smb2_iovec *iov, int offset, uint16_t value);
@@ -356,11 +382,6 @@ int smb2_process_ioctl_fixed(struct smb2_context *smb2,
 int smb2_process_ioctl_variable(struct smb2_context *smb2,
                                 struct smb2_pdu *pdu);
 
-int smb2_decode_fileidfulldirectoryinformation(
-        struct smb2_context *smb2,
-        struct smb2_fileidfulldirectoryinformation *fs,
-        struct smb2_iovec *vec);
-
 int smb2_decode_file_basic_info(struct smb2_context *smb2,
                                 void *memctx,
                                 struct smb2_file_basic_info *fs,
@@ -384,6 +405,10 @@ int smb2_decode_security_descriptor(struct smb2_context *smb2,
                                     struct smb2_security_descriptor *sd,
                                     struct smb2_iovec *vec);
 
+int smb2_decode_file_fs_volume_info(struct smb2_context *smb2,
+                                    void *memctx,
+                                    struct smb2_file_fs_volume_info *fs,
+                                    struct smb2_iovec *vec);
 int smb2_decode_file_fs_size_info(struct smb2_context *smb2,
                                   void *memctx,
                                   struct smb2_file_fs_size_info *fs,
@@ -413,6 +438,7 @@ void smb2_free_all_dirs(struct smb2_context *smb2);
 
 int smb2_read_from_buf(struct smb2_context *smb2);
 void smb2_change_events(struct smb2_context *smb2, int fd, int events);
+void smb2_timeout_pdus(struct smb2_context *smb2);
 
 struct dcerpc_context;
 int dcerpc_set_uint8(struct dcerpc_context *ctx, struct smb2_iovec *iov,
@@ -423,6 +449,20 @@ int dcerpc_set_uint32(struct dcerpc_context *ctx, struct smb2_iovec *iov,
                       int offset, uint32_t value);
 int dcerpc_set_uint64(struct dcerpc_context *ctx, struct smb2_iovec *iov,
                       int offset, uint64_t value);
+int dcerpc_get_uint16(struct dcerpc_context *ctx, struct smb2_iovec *iov,
+                      int offset, uint16_t *value);
+int dcerpc_get_uint32(struct dcerpc_context *ctx, struct smb2_iovec *iov,
+                      int offset, uint32_t *value);
+int dcerpc_get_uint64(struct dcerpc_context *ctx, struct smb2_iovec *iov,
+                      int offset, uint64_t *value);
+
+struct dcerpc_pdu;
+int dcerpc_pdu_direction(struct dcerpc_pdu *pdu);
+
+int dcerpc_align_3264(struct dcerpc_context *ctx, int offset);
+
+struct connect_data;                                           /* defined in libsmb2.c */
+void free_c_data(struct smb2_context*, struct connect_data*);  /* defined in libsmb2.c */
 
 #ifdef __cplusplus
 }

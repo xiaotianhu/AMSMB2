@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 50;
+	objectVersion = 52;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -19,6 +19,8 @@
 		79FDFE7C20AD545D00749FB5 /* Context.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79FDFE7B20AD545D00749FB5 /* Context.swift */; };
 		79FDFF0120AD852200749FB5 /* FileHandle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79FDFF0020AD852200749FB5 /* FileHandle.swift */; };
 		79FDFF0A20ADA2B000749FB5 /* Directory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79FDFF0920ADA2B000749FB5 /* Directory.swift */; };
+		8EC9EB9E2ACAA6B0009BE71A /* libsmb2.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EC9EB9A2ACAA687009BE71A /* libsmb2.xcframework */; };
+		8EC9EB9F2ACAA6B0009BE71A /* libsmb2.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8EC9EB9A2ACAA687009BE71A /* libsmb2.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -30,6 +32,20 @@
 			remoteInfo = AMSMB2;
 		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		8EC9EBA02ACAA6B0009BE71A /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				8EC9EB9F2ACAA6B0009BE71A /* libsmb2.xcframework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		790FA33820B2CC5600578C8A /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
@@ -47,6 +63,7 @@
 		79FDFE7B20AD545D00749FB5 /* Context.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Context.swift; sourceTree = "<group>"; };
 		79FDFF0020AD852200749FB5 /* FileHandle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileHandle.swift; sourceTree = "<group>"; };
 		79FDFF0920ADA2B000749FB5 /* Directory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Directory.swift; sourceTree = "<group>"; };
+		8EC9EB9A2ACAA687009BE71A /* libsmb2.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = libsmb2.xcframework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -54,6 +71,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8EC9EB9E2ACAA6B0009BE71A /* libsmb2.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -117,6 +135,7 @@
 		79FDFF0220AD8DDF00749FB5 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				8EC9EB9A2ACAA687009BE71A /* libsmb2.xcframework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -143,6 +162,7 @@
 				79FDFE5020AD439F00749FB5 /* Frameworks */,
 				79FDFE5120AD439F00749FB5 /* Headers */,
 				79FDFE5220AD439F00749FB5 /* Resources */,
+				8EC9EBA02ACAA6B0009BE71A /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -314,7 +334,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				MTL_ENABLE_DEBUG_INFO = YES;
-				ONLY_ACTIVE_ARCH = YES;
+				ONLY_ACTIVE_ARCH = NO;
 				SUPPORTED_PLATFORMS = "appletvsimulator appletvos macosx iphonesimulator iphoneos";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -419,6 +439,7 @@
 				"OTHER_LDFLAGS[sdk=macosx*]" = "-lsmb2-macos";
 				PRODUCT_BUNDLE_IDENTIFIER = com.mousavian.AMSMB2;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_INCLUDE_PATHS = "${SRCROOT}/libsmb2/**";
 				TARGETED_DEVICE_FAMILY = "1,2,3";
@@ -454,6 +475,7 @@
 				"OTHER_LDFLAGS[sdk=macosx*]" = "-lsmb2-macos";
 				PRODUCT_BUNDLE_IDENTIFIER = com.mousavian.AMSMB2;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_INCLUDE_PATHS = "${SRCROOT}/libsmb2/**";
 				TARGETED_DEVICE_FAMILY = "1,2,3";

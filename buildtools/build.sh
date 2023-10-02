@@ -17,16 +17,16 @@ PACKAGE_DIRECTORY=`pwd`
 export LIB_OUTPUT="${PACKAGE_DIRECTORY}/libsmb2/lib"
 cd buildtools
 
-brew update
-for pkg in cmake automake autoconf libtool; do
-    if brew list -1 | grep -q "^${pkg}\$"; then
-        echo "Updating ${pkg}."
-        brew upgrade $pkg &> /dev/null
-    else
-        echo "Installing ${pkg}."
-        brew install $pkg > /dev/null
-    fi
-done
+#brew update
+#for pkg in cmake automake autoconf libtool; do
+#    if brew list -1 | grep -q "^${pkg}\$"; then
+#        echo "Updating ${pkg}."
+#        brew upgrade $pkg &> /dev/null
+#    else
+#        echo "Installing ${pkg}."
+#        brew install $pkg > /dev/null
+#    fi
+#done
 
 if [ ! -d libsmb2 ]; then
     git clone https://github.com/sahlberg/libsmb2
@@ -68,7 +68,3 @@ cd ..
 echo  "Copying additional headers"
 cp    "libsmb2/include/libsmb2-private.h" "${PACKAGE_DIRECTORY}/libsmb2/include/"
 cp    "module.modulemap"                  "${PACKAGE_DIRECTORY}/libsmb2/include/"
-
-rm -rf libsmb2
-rm -rf include
-rm -rf lib

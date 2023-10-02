@@ -1,4 +1,4 @@
-module SMB2 [extern_c] {
+module SMB21 [extern_c] {
     module LibSMB2 {
         header "smb2/libsmb2.h"
         header "smb2/smb2.h"
